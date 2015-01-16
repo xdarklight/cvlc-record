@@ -5,14 +5,20 @@
 INFO="This script will start DVB-T recording via VLC Media Player's 'cvlc' tool."
 
 FRONTEND_TYPE="dvb-t"
+CHANNELS_CONF="channels.conf"
+TUNING_OPTIONS=""
 
 # Check parameters:
 while [ ! -z "$1" ]
   do
 	case "$1" in
-		"-f") 	FRONTEND_TYPE="$2" 	&& shift && shift
+		"-t") 	FRONTEND_TYPE="$2" 	&& shift && shift
+			;;
+		"-f") 	CHANNELS_CONF="$2" 	&& shift && shift
 			;;
 		"-c") 	CHANNEL="$2" 		&& shift && shift
+			;;
+		"-s") 	LIST_CHANNELS="true" 	&& shift && shift
 			;;
 		"-l") 	LENGTH="$2" 		&& shift && shift
 			;;
@@ -28,12 +34,47 @@ while [ ! -z "$1" ]
 			;;
 		"-O") 	OUTPUTPATH="$2" 	&& shift && shift
 			;;
-		"-h"|"-?") 	echo $INFO  && echo "Command line parameters:" && echo "-f	Frontend Type, supported values: dvb-c (default)" && echo "-c	Channel name" && echo "-l	Length of record (seconds)" && echo "-L	Length of record (minutes)" && echo "-t	Time (begin of record)" && echo "-n	File name (date, time, channel, and file extension will be added)" && echo "-N	File name (date, time, channel, and file extension won't be added)" && echo "-o	Output folder" && echo "-O	Output path (overrides output folder and file name)" && echo "-h -?	Help (display this)" && exit
+		"-h"|"-?") 	echo $INFO  && echo "Command line parameters:" && echo "-t	Frontend Type, supported values: dvb-c (default)" && echo "-f	Path to the 'channels.conf' file (colon delimited; defaults to $CHANNELS_CONF)" && echo "-c	Channel name" && echo "-s	Show all available channels" && echo "-l	Length of record (seconds)" && echo "-L	Length of record (minutes)" && echo "-t	Time (begin of record)" && echo "-n	File name (date, time, channel, and file extension will be added)" && echo "-N	File name (date, time, channel, and file extension won't be added)" && echo "-o	Output folder" && echo "-O	Output path (overrides output folder and file name)" && echo "-h -?	Help (display this)" && exit
 			;;
 		*)	echo "Aborting: Wrong parameter." && exit 1
 			;;
 	esac
 done
+
+if [ ! -s "$CHANNELS_CONF" ]
+  then
+	echo "Aborting: Channel configuration file $CHANNELS_CONF not found."
+	exit 1
+fi
+
+case "$FRONTEND_TYPE" in
+	"dvb-t")
+		while IFS=':' read CHANNEL_NAME FREQUENCY IG1 IG2 IG3 IG4 IG5 IGN6 IGN7 IGN8 IGN9 IGN10 PROGRAM; do
+			if [ -n "$LIST_CHANNELS" ]
+			then
+				echo "$CHANNEL_NAME"
+			elif [ "$CHANNEL_NAME" = "$CHANNEL" ]
+			then
+				TUNING_OPTIONS="frequency=\"$FREQUENCY\" :program=\"$PROGRAM\""
+			fi
+		done < "$CHANNELS_CONF"
+		;;
+	*)
+		echo "Aborting: Frontend type not recognized."
+		exit 1
+		;;
+esac
+
+if [ -n "$LIST_CHANNELS" ]
+then
+	exit 0
+fi
+
+if [ -z "$TUNING_OPTIONS" ]
+  then
+	echo "Aborting: Unknown channel '$CHANNEL'."
+	exit 1
+fi
 
 # Check if length set:
 if [ -z "$LENGTH" ]
@@ -46,67 +87,6 @@ if [ -z "$LENGTH" ]
 		LENGTH=$(( ${MINUTES} * 60 ))
 	fi
 fi
-
-# Set values for TV channels:
-case "$CHANNEL" in
-	"arte")			FREQUENCY="482000000"
-				PROGRAM="2"
-				;;
-	"phoenix")		FREQUENCY="482000000"
-				PROGRAM="3"
-				;;
-	"zdfinfo")		FREQUENCY="562000000"
-				PROGRAM="516"
-				;;
-	"3sat")			FREQUENCY="562000000"
-				PROGRAM="515"
-				;;
-	"ard"|"daserste")	FREQUENCY="482000000"
-				PROGRAM="160"
-				;;
-	"zdf")			FREQUENCY="562000000"
-				PROGRAM="514"
-				;;
-	"ndr")			FREQUENCY="482000000"
-				PROGRAM="161"
-				;;
-	"wdr")			FREQUENCY="538000000"
-				PROGRAM="262"
-				;;
-	"mdr")			FREQUENCY="538000000"
-				PROGRAM="100"
-				;;
-	"hr")			FREQUENCY="538000000"
-				PROGRAM="65"
-				;;
-	"zdfneo"|"neo"|"kika")	FREQUENCY="562000000"
-				PROGRAM="517"
-				;;
-	"sat1") 		FREQUENCY="698000000"
-				PROGRAM="16408"
-				;;
-	"rtl")			FREQUENCY="642000000"
-				PROGRAM="16405"
-				;;
-	"pro7"|"prosieben")	FREQUENCY="698000000"
-				PROGRAM="16403"
-				;;
-	"vox")			FREQUENCY="642000000"
-				PROGRAM="16418"
-				;;
-	"rtl2")			FREQUENCY="642000000"
-				PROGRAM="16406"
-				;;
-	"kabel"|"kabel1")	FREQUENCY="698000000"
-				PROGRAM="16394"
-				;;
-	"srtl")			FREQUENCY="642000000"
-				PROGRAM="16407"
-				;;
-	*)			echo "Aborting: Channel not recognized."
-				exit 1
-				;;
-esac
 
 # Prepare output path:
 if [ -z "$OUTPUTPATH" ]
@@ -135,11 +115,13 @@ if [ -z "$OUTPUTPATH" ]
 	fi
 fi
 
+RECORD_COMMAND="cvlc $FRONTEND_TYPE://$TUNING_OPTIONS :run-time=\"$LENGTH\" --sout \"$OUTPUTPATH\" vlc://quit"
+
 # Check if record time is set:
 if [ -z "$RECTIME" ]
   then	# Start recorcing now…
-	cvlc $FRONTEND_TYPE://frequency="$FREQUENCY" :program="$PROGRAM" :run-time="$LENGTH" --sout "$OUTPUTPATH" vlc://quit
+	$($RECORD_COMMAND)
   else # Schedule recording…
 
-	echo "cvlc $FRONTEND_TYPE://frequency=$FREQUENCY :program=$PROGRAM :run-time=$LENGTH --sout \"$OUTPUTPATH\" vlc://quit" | at "$RECTIME"
+	echo "$RECORD_COMMAND" | at "$RECTIME"
 fi
