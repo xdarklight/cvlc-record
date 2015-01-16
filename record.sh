@@ -4,11 +4,14 @@
 
 INFO="This script will start DVB-T recording via VLC Media Player's 'cvlc' tool."
 
+FRONTEND_TYPE="dvb-t"
 
 # Check parameters:
 while [ ! -z "$1" ]
   do
 	case "$1" in
+		"-f") 	FRONTEND_TYPE="$2" 	&& shift && shift
+			;;
 		"-c") 	CHANNEL="$2" 		&& shift && shift
 			;;
 		"-l") 	LENGTH="$2" 		&& shift && shift
@@ -25,7 +28,7 @@ while [ ! -z "$1" ]
 			;;
 		"-O") 	OUTPUTPATH="$2" 	&& shift && shift
 			;;
-		"-h"|"-?") 	echo $INFO  && echo "Command line parameters:" && echo "-c	Channel name" && echo "-l	Length of record (seconds)" && echo "-L	Length of record (minutes)" && echo "-t	Time (begin of record)" && echo "-n	File name (date, time, channel, and file extension will be added)" && echo "-N	File name (date, time, channel, and file extension won't be added)" && echo "-o	Output folder" && echo "-O	Output path (overrides output folder and file name)" && echo "-h -?	Help (display this)" && exit
+		"-h"|"-?") 	echo $INFO  && echo "Command line parameters:" && echo "-f	Frontend Type, supported values: dvb-c (default)" && echo "-c	Channel name" && echo "-l	Length of record (seconds)" && echo "-L	Length of record (minutes)" && echo "-t	Time (begin of record)" && echo "-n	File name (date, time, channel, and file extension will be added)" && echo "-N	File name (date, time, channel, and file extension won't be added)" && echo "-o	Output folder" && echo "-O	Output path (overrides output folder and file name)" && echo "-h -?	Help (display this)" && exit
 			;;
 		*)	echo "Aborting: Wrong parameter." && exit 1
 			;;
@@ -135,8 +138,8 @@ fi
 # Check if record time is set:
 if [ -z "$RECTIME" ]
   then	# Start recorcing now…
-	cvlc dvb-t://frequency="$FREQUENCY" :program="$PROGRAM" :run-time="$LENGTH" --sout "$OUTPUTPATH" vlc://quit
+	cvlc $FRONTEND_TYPE://frequency="$FREQUENCY" :program="$PROGRAM" :run-time="$LENGTH" --sout "$OUTPUTPATH" vlc://quit
   else # Schedule recording…
 
-	echo "cvlc dvb-t://frequency=$FREQUENCY :program=$PROGRAM :run-time=$LENGTH --sout \"$OUTPUTPATH\" vlc://quit" | at "$RECTIME"
+	echo "cvlc $FRONTEND_TYPE://frequency=$FREQUENCY :program=$PROGRAM :run-time=$LENGTH --sout \"$OUTPUTPATH\" vlc://quit" | at "$RECTIME"
 fi
