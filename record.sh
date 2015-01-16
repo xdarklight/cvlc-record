@@ -2,7 +2,7 @@
 
 # DE: Dieses Script schmeißt die DVB-T-Aufnahme mithilfe des VLC Media Players an:
 
-INFO="This script will start DVB-T recording via VLC Media Player's 'cvlc' tool."
+INFO="This script will start DVB-T and DVB-C recording via VLC Media Player's 'cvlc' tool."
 
 FRONTEND_TYPE="dvb-t"
 CHANNELS_CONF="channels.conf"
@@ -34,7 +34,7 @@ while [ ! -z "$1" ]
 			;;
 		"-O") 	OUTPUTPATH="$2" 	&& shift && shift
 			;;
-		"-h"|"-?") 	echo $INFO  && echo "Command line parameters:" && echo "-t	Frontend Type, supported values: dvb-c (default)" && echo "-f	Path to the 'channels.conf' file (colon delimited; defaults to $CHANNELS_CONF)" && echo "-c	Channel name" && echo "-s	Show all available channels" && echo "-l	Length of record (seconds)" && echo "-L	Length of record (minutes)" && echo "-t	Time (begin of record)" && echo "-n	File name (date, time, channel, and file extension will be added)" && echo "-N	File name (date, time, channel, and file extension won't be added)" && echo "-o	Output folder" && echo "-O	Output path (overrides output folder and file name)" && echo "-h -?	Help (display this)" && exit
+		"-h"|"-?") 	echo $INFO  && echo "Command line parameters:" && echo "-t	Frontend Type, supported values: dvb-t (default), dvb-c" && echo "-f	Path to the 'channels.conf' file (colon delimited; defaults to $CHANNELS_CONF)" && echo "-c	Channel name" && echo "-s	Show all available channels" && echo "-l	Length of record (seconds)" && echo "-L	Length of record (minutes)" && echo "-t	Time (begin of record)" && echo "-n	File name (date, time, channel, and file extension will be added)" && echo "-N	File name (date, time, channel, and file extension won't be added)" && echo "-o	Output folder" && echo "-O	Output path (overrides output folder and file name)" && echo "-h -?	Help (display this)" && exit
 			;;
 		*)	echo "Aborting: Wrong parameter." && exit 1
 			;;
@@ -55,7 +55,18 @@ case "$FRONTEND_TYPE" in
 				echo "$CHANNEL_NAME"
 			elif [ "$CHANNEL_NAME" = "$CHANNEL" ]
 			then
-				TUNING_OPTIONS="frequency=\"$FREQUENCY\" :program=\"$PROGRAM\""
+				TUNING_OPTIONS="frequency=\"$FREQUENCY\":program=\"$PROGRAM\""
+			fi
+		done < "$CHANNELS_CONF"
+		;;
+	"dvb-c")
+		while IFS=':' read CHANNEL_NAME FREQUENCY IG1 SYMBOL_RATE IG3 IG4 IG5 IGN6 PROGRAM; do
+			if [ -n "$LIST_CHANNELS" ]
+			then
+				echo "$CHANNEL_NAME"
+			elif [ "$CHANNEL_NAME" = "$CHANNEL" ]
+			then
+				TUNING_OPTIONS="frequency=\"$FREQUENCY\":srate=\"$SYMBOL_RATE\" --program=\"$PROGRAM\""
 			fi
 		done < "$CHANNELS_CONF"
 		;;
