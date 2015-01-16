@@ -2,7 +2,7 @@
 
 # DE: Dieses Script schmeißt die DVB-T-Aufnahme mithilfe des VLC Media Players an:
 
-INFO="This script will start DVB-T recording via VLC Media Player."
+INFO="This script will start DVB-T recording via VLC Media Player's 'cvlc' tool."
 
 
 # Check parameters:
