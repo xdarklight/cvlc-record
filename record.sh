@@ -55,7 +55,7 @@ case "$FRONTEND_TYPE" in
 				echo "$CHANNEL_NAME"
 			elif [ "$CHANNEL_NAME" = "$CHANNEL" ]
 			then
-				TUNING_OPTIONS="frequency=\"$FREQUENCY\":program=\"$PROGRAM\""
+				TUNING_OPTIONS="frequency=$FREQUENCY:program=$PROGRAM"
 			fi
 		done < "$CHANNELS_CONF"
 		;;
@@ -66,7 +66,7 @@ case "$FRONTEND_TYPE" in
 				echo "$CHANNEL_NAME"
 			elif [ "$CHANNEL_NAME" = "$CHANNEL" ]
 			then
-				TUNING_OPTIONS="frequency=\"$FREQUENCY\":srate=\"$SYMBOL_RATE\" --program=\"$PROGRAM\""
+				TUNING_OPTIONS="frequency=$FREQUENCY:srate=$SYMBOL_RATE --program=$PROGRAM"
 			fi
 		done < "$CHANNELS_CONF"
 		;;
@@ -126,7 +126,7 @@ if [ -z "$OUTPUTPATH" ]
 	fi
 fi
 
-RECORD_COMMAND="cvlc $FRONTEND_TYPE://$TUNING_OPTIONS :run-time=\"$LENGTH\" --sout \"$OUTPUTPATH\" vlc://quit"
+RECORD_COMMAND="cvlc $FRONTEND_TYPE://$TUNING_OPTIONS --sout $OUTPUTPATH --run-time=$LENGTH vlc://quit"
 
 # Check if record time is set:
 if [ -z "$RECTIME" ]
